@@ -1,0 +1,11 @@
+[package]
+name = "aoc2023"
+version = "0.1.0"
+
+[[bin]]
+name = "aoc2023"
+path = "main.rs"
+
+[dependencies]
+regex = "1.10.2"
+# Add your dependencies here
