@@ -1,5 +1,6 @@
 go 1.21.5
 
+use ./utils
 use ./day1
 use ./day2
 use ./day3
@@ -8,4 +9,4 @@ use ./day5
 use ./day6
 use ./day7
 use ./day8
-use ./utils
+use ./day9
