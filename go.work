@@ -10,3 +10,4 @@ use ./day6
 use ./day7
 use ./day8
 use ./day9
+use ./day10
