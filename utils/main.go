@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -79,6 +80,12 @@ func TransposeMatrix(matrix [][]string) [][]string {
 		result = append(result, row)
 	}
 	return result
+}
+
+func PrintMatrix(matrix [][]string) {
+	for _, row := range matrix {
+		fmt.Println(row)
+	}
 }
 
 func Abs(x int) int {
