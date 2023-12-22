@@ -139,9 +139,7 @@ func (b *Brick) canBeDisintegrated(stack Stack) bool {
 	return true
 }
 
-func solution1(input string) int {
-	lines := utils.FileToArray(input)
-
+func buildStack(lines []string) (Stack, int) {
 	stack := make(Stack, 0)
 
 	highest := 0
@@ -162,16 +160,16 @@ func solution1(input string) int {
 		stack[brick.start.z] = append(stack[brick.start.z], brick)
 	}
 
-	for z := 1; z <= highest; z++ {
-		tmp := make([]Brick, len(stack[z]))
-		copy(tmp, stack[z])
+	return stack, highest
 
-		for _, brick := range tmp {
-			for brick.canMoveDown(stack) {
-				brick.moveDown(stack)
-			}
-		}
-	}
+}
+
+func solution1(input string) int {
+	lines := utils.FileToArray(input)
+
+	stack, highest := buildStack(lines)
+
+	letBricksFall(stack, highest)
 
 	count := 0
 
@@ -192,69 +190,44 @@ func solution1(input string) int {
 func solution2(input string) int {
 	lines := utils.FileToArray(input)
 
-	stack := make(Stack, 0)
+	stack, highest := buildStack(lines)
 
-	highest := 0
-	for i, line := range lines {
+	letBricksFall(stack, highest)
 
-		b := utils.StringToIntArray(strings.Replace(line, "~", ",", -1), ",")
+	count := 0
 
-		brick := Brick{
-			id:    i,
-			start: Point{b[0], b[1], b[2]},
-			end:   Point{b[3], b[4], b[5]},
+	for z := 1; z <= highest; z++ {
+		for _, brick := range stack[z] {
+			// we remove the brick from the stack
+			newStack := copyStack(stack)
+			newStack = removeBrick(newStack, brick)
+			count += letBricksFall(newStack, highest)
 		}
-
-		if brick.start.z > highest {
-			highest = brick.start.z
-		}
-
-		stack[brick.start.z] = append(stack[brick.start.z], brick)
 	}
 
+	return count
+
+}
+
+func letBricksFall(stack Stack, highest int) int {
+
+	// we let all bricks fall down and count how many bricks fall
+	counter := map[int]bool{}
 	for z := 1; z <= highest; z++ {
 		tmp := make([]Brick, len(stack[z]))
 		copy(tmp, stack[z])
 
 		for _, brick := range tmp {
 			for brick.canMoveDown(stack) {
+				if _, ok := counter[brick.id]; !ok {
+					counter[brick.id] = true
+				}
 				brick.moveDown(stack)
 			}
 		}
 	}
 
-	count := 0
-
-	for z := 1; z <= highest; z++ {
-		for _, brick := range stack[z] {
-
-			// we remove the brick from the stack
-			newStack := copyStack(stack)
-			newStack = removeBrick(newStack, brick)
-
-			// we let all bricks fall down and count how many bricks fall
-			counter := map[int]bool{}
-			for z := 1; z <= highest; z++ {
-				tmp := make([]Brick, len(newStack[z]))
-				copy(tmp, newStack[z])
-
-				for _, brick := range tmp {
-					for brick.canMoveDown(newStack) {
-						if _, ok := counter[brick.id]; !ok {
-							counter[brick.id] = true
-
-						}
-						brick.moveDown(newStack)
-					}
-				}
-			}
-
-			count += len(counter)
-		}
-	}
-
-	return count
-
+	return len(counter)
 }
 
 func copyStack(stack Stack) Stack {
