@@ -86,6 +86,7 @@ func PrintMatrix(matrix [][]string) {
 	for _, row := range matrix {
 		fmt.Println(row)
 	}
+	fmt.Println("------------------")
 }
 
 func Abs(x int) int {
