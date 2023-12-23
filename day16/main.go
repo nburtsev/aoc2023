@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"utils"
 
 	"github.com/fatih/color"
 )
 
 func main() {
-	println(solution1("input.txt"))
+	// println(solution1("input.txt"))
 	println(solution2("input.txt"))
+	// println(solution3("input.txt"))
 }
 
 // all these could be slices I guess but it is easier to read like this :)
@@ -39,7 +41,6 @@ func solution1(filename string) int {
 	}
 
 	c, _ := energizedCells(field, []*Beam{{direction: "right", x: -1, y: 0}})
-	// printFieldColor(f)
 	return c
 }
 
@@ -59,16 +60,12 @@ func solution2(filename string) int {
 	// maxF := Field{}
 
 	for y := 0; y < len(field); y++ {
-
-		cpy := make(Field, len(field))
-		copy(cpy, field)
-		m1, _ := energizedCells(cpy, []*Beam{{direction: "right", x: -1, y: y}})
+		m1, _ := energizedCells(field, []*Beam{{direction: "right", x: -1, y: y}})
 		if m1 > max {
 			max = m1
 			// maxF = f
 		}
-		copy(cpy, field)
-		m2, _ := energizedCells(cpy, []*Beam{{direction: "left", x: len(field[0]), y: y}})
+		m2, _ := energizedCells(field, []*Beam{{direction: "left", x: len(field[0]), y: y}})
 		if m2 > max {
 			max = m2
 			// maxF = f
@@ -76,15 +73,12 @@ func solution2(filename string) int {
 	}
 
 	for x := 0; x < len(field[0]); x++ {
-		cpy := make(Field, len(field))
-		copy(cpy, field)
-		m1, _ := energizedCells(cpy, []*Beam{{direction: "down", x: x, y: -1}})
+		m1, _ := energizedCells(field, []*Beam{{direction: "down", x: x, y: -1}})
 		if m1 > max {
 			max = m1
 			// maxF = f
 		}
-		copy(cpy, field)
-		m2, _ := energizedCells(cpy, []*Beam{{direction: "up", x: x, y: len(field)}})
+		m2, _ := energizedCells(field, []*Beam{{direction: "up", x: x, y: len(field)}})
 		if m2 > max {
 			max = m2
 			// maxF = f
@@ -92,6 +86,70 @@ func solution2(filename string) int {
 	}
 
 	// printFieldColor(maxF)
+	return max
+}
+
+func solution3(filename string) int {
+	lines := utils.FileToArray(filename)
+
+	field := make(Field, len(lines))
+
+	for y := 0; y < len(lines); y++ {
+		field[y] = make([]Cell, len(lines))
+		for x := 0; x < len(lines[0]); x++ {
+			field[y][x] = Cell{rune(lines[y][x]), 0}
+		}
+	}
+
+	max := 0
+	// maxF := Field{}
+
+	maxY := len(field)
+	maxX := len(field[0])
+
+	ch := make(chan int, maxY*maxX)
+
+	wg := sync.WaitGroup{}
+
+	for y := 0; y < maxY; y++ {
+		wg.Add(1)
+		go func(y int, wg *sync.WaitGroup) {
+			m, _ := energizedCells(field, []*Beam{{direction: "right", x: -1, y: y}})
+			ch <- m
+			wg.Done()
+		}(y, &wg)
+
+		wg.Add(1)
+		go func(y int, wg *sync.WaitGroup) {
+			m, _ := energizedCells(field, []*Beam{{direction: "right", x: maxX, y: y}})
+			ch <- m
+			wg.Done()
+		}(y, &wg)
+	}
+	for x := 0; x < maxX; x++ {
+		wg.Add(1)
+		go func(x int, wg *sync.WaitGroup) {
+			m, _ := energizedCells(field, []*Beam{{direction: "down", x: x, y: -1}})
+			ch <- m
+			wg.Done()
+		}(x, &wg)
+
+		wg.Add(1)
+		go func(x int, wg *sync.WaitGroup) {
+			m, _ := energizedCells(field, []*Beam{{direction: "down", x: x, y: maxY}})
+			ch <- m
+			wg.Done()
+		}(x, &wg)
+	}
+
+	wg.Wait()
+	close(ch)
+
+	for m := range ch {
+		if m > max {
+			max = m
+		}
+	}
 	return max
 }
 
@@ -104,10 +162,10 @@ func energizedCells(input Field, beams []*Beam) (int, Field) {
 		copy(field[i], input[i])
 	}
 	for len(beams) > 0 {
-
 		newBeams := []*Beam{}
 		for _, b := range beams {
 			newBeams = append(newBeams, stepBeam(field, b)...)
+			// printFieldColors(field)
 		}
 
 		beams = newBeams
@@ -223,9 +281,10 @@ func printFieldPlain(field Field) {
 }
 
 func printFieldColors(field Field) {
-	green := color.New(color.FgGreen)
-	cyan := color.New(color.FgCyan)
-	red := color.New(color.FgRed)
+	fmt.Print("\033[H\033[2J")
+	green := color.New(color.BgGreen)
+	cyan := color.New(color.BgCyan)
+	red := color.New(color.BgRed)
 	for y := 0; y < len(field); y++ {
 		for x := 0; x < len(field[0]); x++ {
 			if field[y][x].visited > 1 {
